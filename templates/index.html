@@ -1,0 +1,154 @@
+<!-- index.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="bi bi-bezier me-2"></i>Design Review
+                </h2>
+
+                <!-- Email Form -->
+                <div id="emailForm" class="mb-4">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Your Email</label>
+                        <div class="input-group">
+                            <input type="email" class="form-control" id="email" placeholder="Enter your email..." {% if
+                                session.email %}value="{{ session.email }}" {% endif %}>
+                            <button class="btn btn-outline-primary" type="button" id="setEmailBtn">
+                                Set Email
+                            </button>
+                        </div>
+                        <div class="form-text text-muted">
+                            Enter your email to access premium features
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Premium Features Display -->
+                <div class="premium-features glass-effect mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="requests-remaining" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Reviews available in current time window">
+                            {{ rate_info.requests_used }}/{{ rate_info.requests_limit }} Reviews Used
+                        </span>
+                        {% if not supporter_status or not supporter_status.is_supporter %}
+                        <a href="https://www.buymeacoffee.com/pranaysuyash" class="btn btn-warning btn-sm"
+                            target="_blank" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Get detailed analysis and more reviews per day">
+                            <i class="bi bi-star-fill me-1"></i>
+                            Upgrade to Premium
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Supporter Status -->
+                <div id="supporterStatus" class="mb-4 {% if not supporter_status %}d-none{% endif %}">
+                    {% if supporter_status and supporter_status.is_supporter %}
+                    <div class="premium-badge glass-effect">
+                        <span class="badge-icon">⭐</span>
+                        Premium Member
+                        <div class="rate-limit">{{ rate_info.requests_limit }} reviews/day</div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Free Tier</h5>
+                        <p class="mb-0">
+                            <a href="https://www.buymeacoffee.com/pranaysuyash" target="_blank" class="alert-link">
+                                Support us
+                            </a>
+                            to unlock:
+                        <ul class="mt-2 mb-0">
+                            <li>Detailed UX/UI analysis</li>
+                            <li>Technical recommendations</li>
+                            <li>More reviews per day</li>
+                            <li>Priority support</li>
+                        </ul>
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Upload Form -->
+                <form id="uploadForm" class="mb-4">
+                    <div class="mb-3">
+                        <label for="context" class="form-label">
+                            Design Context
+                            <i class="bi bi-question-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="Provide context about your design's purpose and target users"></i>
+                        </label>
+                        <textarea class="form-control" id="context" rows="3"
+                            placeholder="Describe your design's purpose, target users, and any specific areas you'd like feedback on..."
+                            maxlength="500"></textarea>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>Add context to get more relevant feedback</span>
+                            <span>
+                                <span id="contextCharCount">0</span>/500
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image" class="form-label">
+                            Upload Design
+                            <i class="bi bi-question-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="Upload your design image (JPG, JPEG, PNG, max 5MB)"></i>
+                        </label>
+                        <input type="file" class="form-control" id="image" accept=".jpg,.jpeg,.png" required>
+                        <div class="form-text">
+                            Supported formats: JPG, JPEG, PNG (max 5MB)
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                        <i class="bi bi-lightning-charge me-2"></i>
+                        Generate Review
+                    </button>
+                </form>
+
+                <!-- Loading Overlay -->
+                <div id="loading" class="loading-overlay">
+                    <div class="loading-content text-center">
+                        <div class="loading-spinner mb-3"></div>
+                        <h5 class="mb-3">Analyzing Design...</h5>
+                        <div class="progress-wrapper">
+                            <div class="progress-bar"></div>
+                        </div>
+                        <small class="text-muted mt-2">This may take a few moments</small>
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div id="error" class="error-message d-none" role="alert"></div>
+
+                <!-- Result Section -->
+                <div id="result" class="mt-4 d-none">
+                    <h3 class="mb-3">Design Review</h3>
+                    <div id="reviewContent" class="review-content"></div>
+
+                    <!-- Rate Info -->
+                    <div id="rateInfo" class="mt-3 text-muted small text-end">
+                        Reviews remaining:
+                        <span class="requests-remaining">
+                            {{ rate_info.requests_limit - rate_info.requests_used }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initialize tooltips -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}
