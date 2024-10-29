@@ -1,5 +1,4 @@
 // main.js
-const API_BASE_URL = 'http://127.0.0.1:5001';
 
 document.addEventListener('DOMContentLoaded', function () {
     // Handle unhandled promise rejections
@@ -21,6 +20,34 @@ document.addEventListener('DOMContentLoaded', function () {
     const contextArea = document.getElementById('context');
     const contextCharCount = document.getElementById('contextCharCount');
     const supporterStatus = document.getElementById('supporterStatus');
+
+    // Configure marked.js with custom renderer
+    if (typeof marked !== 'undefined') {
+        const renderer = new marked.Renderer();
+
+        renderer.heading = function (text, level, raw, slugger) {
+            // Ensure rawText is a string before calling toLowerCase
+            const rawText = typeof raw === 'string' ? raw : text;
+            // If you plan to use escapedText for IDs or other purposes, uncomment the next line
+            // const escapedText = rawText.toLowerCase().replace(/[^\w]+/g, '-');
+
+            return `
+                <h${level} class="section-header level-${level}">
+                    ${text}
+                </h${level}>
+            `;
+        };
+
+        marked.setOptions({
+            renderer: renderer,
+            highlight: function (code, lang) {
+                if (typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return code;
+            }
+        });
+    }
 
     // Show loading overlay
     function showLoading() {
@@ -85,77 +112,85 @@ document.addEventListener('DOMContentLoaded', function () {
             if (result && reviewContent) {
                 result.classList.remove('d-none');
 
-                const premiumBadge = reviewData.is_premium ?
-                    `<span class="badge bg-warning text-dark ms-2">Premium Analysis</span>` : '';
+                // DOMPurify configuration
+                const purifyConfig = {
+                    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'hr', 'br', 'i', 'span'],
+                    ALLOWED_ATTR: ['href', 'title', 'class', 'id', 'style', 'align', 'aria-hidden']
+                };
 
-                reviewContent.innerHTML = `
-                    <div class="review-section mb-4 ${reviewData.is_premium ? 'premium-review' : ''}">
-                        <h4 class="section-header">
-                            <i class="bi bi-info-circle me-2"></i>Overview
-                            ${premiumBadge}
-                        </h4>
-                        <div class="section-content p-3">
-                            ${reviewData.overview}
-                        </div>
-                    </div>
-                    
-                    <div class="review-section mb-4">
-                        <h4 class="section-header">
-                            <i class="bi bi-check-circle me-2 text-success"></i>Strengths
-                        </h4>
-                        <div class="section-content p-3">
-                            <ul class="list-unstyled mb-0">
-                                ${reviewData.strengths.map(strength =>
-                    `<li class="mb-2">• ${strength}</li>`
-                ).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="review-section mb-4">
-                        <h4 class="section-header">
-                            <i class="bi bi-exclamation-circle me-2 text-warning"></i>Areas for Improvement
-                        </h4>
-                        <div class="section-content p-3">
-                            <ul class="list-unstyled mb-0">
-                                ${reviewData.improvements.map(improvement =>
-                    `<li class="mb-2">• ${improvement}</li>`
-                ).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                    
-                    <div class="review-section">
-                        <h4 class="section-header">
-                            <i class="bi bi-lightbulb me-2 text-info"></i>Strategic Recommendations
-                        </h4>
-                        <div class="section-content p-3">
-                            ${reviewData.recommendations}
-                        </div>
-                    </div>
-                `;
+                // Ensure review_content is a string
+                const markdownContent = typeof reviewData.review_content === 'string' ? reviewData.review_content : '';
+                if (!markdownContent) {
+                    throw new Error('Review content is empty or invalid.');
+                }
+
+                // Render markdown to HTML and sanitize it
+                const rawHtml = marked.parse(markdownContent);
+                const htmlContent = DOMPurify.sanitize(rawHtml, purifyConfig);
+
+                reviewContent.innerHTML = htmlContent;
+
+                // Post-processing to add icons
+                const headers = reviewContent.querySelectorAll('.section-header');
+                headers.forEach(header => {
+                    const text = header.textContent.trim();
+                    let iconClass = '';
+
+                    if (text.includes('Overview')) {
+                        iconClass = 'bi-info-circle';
+                    } else if (text.includes('Strengths')) {
+                        iconClass = 'bi-check-circle';
+                    } else if (text.includes('Areas for Improvement')) {
+                        iconClass = 'bi-exclamation-triangle';
+                    } else if (text.includes('Suggestions') || text.includes('Specific Suggestions')) {
+                        iconClass = 'bi-lightbulb';
+                    } else if (text.includes('Benefits')) {
+                        iconClass = 'bi-star';
+                    }
+
+                    if (iconClass) {
+                        const iconElement = document.createElement('i');
+                        iconElement.classList.add('bi', iconClass);
+                        iconElement.setAttribute('aria-hidden', 'true');
+                        iconElement.style.marginRight = '0.5rem';
+                        header.prepend(iconElement);
+                    }
+                });
+
+                // Syntax highlighting
+                if (typeof hljs !== 'undefined') {
+                    reviewContent.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }
 
                 result.scrollIntoView({ behavior: 'smooth' });
             }
         } catch (err) {
             console.error('Error displaying review:', err);
-            throw new Error('Failed to display the review. Please try again.');
+            showError(err.message || 'Failed to display the review. Please try again.');
         }
     }
 
     // Enhanced fetch with retry
     async function fetchWithRetry(url, options, maxRetries = 3) {
         let lastError;
-
         for (let i = 0; i < maxRetries; i++) {
             try {
-                const response = await fetch(url.startsWith('http') ? url : `${API_BASE_URL}${url}`, {
+                const response = await fetch(url, {
                     ...options,
                     credentials: 'include'
                 });
 
-                const data = await response.json();
-                console.log('Server response:', data);
+                const contentType = response.headers.get('content-type');
+                let data;
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const textData = await response.text();
+                    throw new Error(`Expected JSON, got: ${textData}`);
+                }
 
                 if (!response.ok) {
                     throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
@@ -170,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     throw err;
                 }
 
+                // Exponential backoff
                 await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
             }
         }
@@ -180,22 +216,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update supporter status display
     function updateSupporterStatus(status) {
         if (supporterStatus) {
-            supporterStatus.innerHTML = status.is_supporter ?
-                `<div class="premium-badge glass-effect">
-                    <span class="badge-icon">⭐</span>
-                    Premium Member
-                    <div class="rate-limit">15 reviews/day</div>
-                </div>` :
-                `<div class="alert alert-info">
-                    <h5 class="alert-heading">Free Tier</h5>
-                    <p class="mb-0">
-                        <a href="https://www.buymeacoffee.com/pranaysuyash" 
-                           target="_blank" class="alert-link">
-                            Become a supporter
-                        </a> 
-                        to unlock premium features and detailed analysis
-                    </p>
-                </div>`;
+            if (status.is_supporter) {
+                supporterStatus.innerHTML = `
+                    <div class="premium-badge glass-effect">
+                        <span class="badge-icon">⭐</span>
+                        Premium Member
+                        <div class="rate-limit">15 reviews/day</div>
+                    </div>`;
+            } else {
+                supporterStatus.innerHTML = `
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Free Tier</h5>
+                        <p class="mb-0">
+                            <a href="https://www.buymeacoffee.com/pranaysuyash" target="_blank" class="alert-link">
+                                Become a supporter
+                            </a> 
+                            to unlock premium features and detailed analysis
+                        </p>
+                    </div>`;
+            }
             supporterStatus.classList.remove('d-none');
         }
     }
@@ -204,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateRateInfo(rateInfo) {
         const rateInfoElements = document.querySelectorAll('.requests-remaining');
         rateInfoElements.forEach(element => {
-            element.textContent = `${rateInfo.requests_used}/${rateInfo.requests_limit}`;
+            element.textContent = `${rateInfo.requests_used}/${rateInfo.requests_limit} Reviews Used`;
         });
     }
 
@@ -216,12 +255,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const email = emailInput.value.trim();
 
                 if (!email) {
-                    throw new Error('Please enter your email address');
+                    throw new Error('Please enter your email address.');
                 }
 
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
-                    throw new Error('Please enter a valid email address');
+                    throw new Error('Please enter a valid email address.');
                 }
 
                 setEmailBtn.disabled = true;
@@ -242,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (error) error.classList.add('d-none');
 
             } catch (err) {
-                showError(err.message || 'Failed to set email');
+                showError(err.message || 'Failed to set email.');
             } finally {
                 setEmailBtn.disabled = false;
             }
@@ -253,29 +292,28 @@ document.addEventListener('DOMContentLoaded', function () {
     if (form) {
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
+            console.log('Form submitted');
 
             try {
                 const file = document.getElementById('image').files[0];
+                console.log('Selected file:', file);
+
                 if (!file) {
-                    throw new Error('Please select an image file');
+                    throw new Error('Please select an image file.');
                 }
 
-                // Validate file
-                if (file.size > 5 * 1024 * 1024) {
-                    throw new Error('File size must be less than 5MB');
+                // Validate file size
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    throw new Error('File size must be less than 5MB.');
                 }
 
+                // Validate file type
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
                 if (!validTypes.includes(file.type)) {
-                    throw new Error('Please upload a JPEG or PNG image');
+                    throw new Error('Please upload a JPEG or PNG image.');
                 }
 
                 console.log('Submitting file:', file);
-                console.log('File details:', {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size
-                });
 
                 const formData = new FormData();
                 formData.append('image', file);
@@ -283,15 +321,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 const context = document.getElementById('context').value.trim();
                 formData.append('context', context);
 
+                // Log formData entries for debugging
+                console.log('FormData entries:');
+                for (let pair of formData.entries()) {
+                    console.log(`${pair[0]}:`, pair[1]);
+                }
+
                 showLoading();
                 submitBtn.disabled = true;
 
+                console.log('Before fetchWithRetry');
                 const data = await fetchWithRetry('/analyze', {
                     method: 'POST',
                     body: formData
                 });
+                console.log('After fetchWithRetry');
 
                 console.log('Review data received:', data);
+
+                if (!data) {
+                    throw new Error('No response received from the server.');
+                }
 
                 if (data.error) {
                     throw new Error(data.message || data.error);
@@ -305,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             } catch (err) {
                 console.error('Error processing request:', err);
-                showError(err.message || 'An unexpected error occurred');
+                showError(err.message || 'An unexpected error occurred.');
             } finally {
                 hideLoading();
                 submitBtn.disabled = false;
@@ -321,20 +371,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 contextCharCount.textContent = count;
             }
             if (count > 500) {
+                // Optionally, provide visual feedback without truncating abruptly
+                contextCharCount.classList.add('text-danger');
+                // Truncate to 500 characters to prevent excessive input
                 this.value = this.value.substring(0, 500);
+            } else {
+                contextCharCount.classList.remove('text-danger');
             }
         });
     }
 
     // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
+    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
     // Cleanup function
     function cleanup() {
-        tooltipTriggerList.forEach(el => {
+        tooltipList.forEach(el => {
             const tooltip = bootstrap.Tooltip.getInstance(el);
             if (tooltip) {
                 tooltip.dispose();

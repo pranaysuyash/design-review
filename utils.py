@@ -1,9 +1,8 @@
-# utils.py (with our better prompts)
+# utils.py
 import base64
 import os
 import logging
-import json
-from openai import OpenAI, OpenAIError, BadRequestError, APIError
+from openai import OpenAI, OpenAIError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,7 +55,6 @@ Context: {context}
 
 Keep feedback constructive and actionable. Focus on practical improvements that would make a real difference to users.
 """,
-    
     'supporter': """
 You are a senior UX/UI expert conducting a comprehensive design analysis. Provide detailed, professional insights.
 
@@ -158,66 +156,20 @@ def generate_design_review(base64_image, context, is_supporter=False):
         review_content = response.choices[0].message.content
         logger.debug("Received review content")
         
-        # Parse the review content
-        sections = {
-            'overview': '',
-            'strengths': [],
-            'improvements': [],
-            'recommendations': []
+        # If review_content is a list, join its elements into a string
+        if isinstance(review_content, list):
+            review_content = ''.join(review_content)
+        
+        # Return the review content as-is
+        return {
+            'review_content': review_content,
+            'is_premium': is_supporter
         }
-        
-        current_section = None
-        current_list = []
-        
-        for line in review_content.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-                
-            # Detect sections
-            lower_line = line.lower()
-            if 'overview' in lower_line and ':' in line:
-                current_section = 'overview'
-                continue
-            elif any(x in lower_line for x in ['strength', 'pros']):
-                current_section = 'strengths'
-                current_list = []
-                continue
-            elif any(x in lower_line for x in ['areas', 'improvement', 'cons']):
-                current_section = 'improvements'
-                current_list = []
-                continue
-            elif any(x in lower_line for x in ['recommend', 'suggestion']):
-                current_section = 'recommendations'
-                continue
-            
-            # Process content based on section
-            if current_section == 'overview':
-                sections['overview'] += ' ' + line
-            elif current_section in ['strengths', 'improvements']:
-                if line.startswith(('•', '-', '*', '1.', '2.', '3.', 'A.', 'B.', 'C.')):
-                    line = line.lstrip('•-*123ABC. ')
-                    if line:
-                        current_list.append(line)
-                        sections[current_section] = current_list
-            elif current_section == 'recommendations':
-                sections['recommendations'] += ' ' + line
-        
-        # Clean up the sections
-        sections['overview'] = sections['overview'].strip()
-        sections['recommendations'] = sections['recommendations'].strip()
-        
-        # Add premium status
-        sections['is_premium'] = is_supporter
-        
-        return sections
         
     except Exception as e:
         logger.error(f"Error generating review: {e}")
         return {
-            'overview': 'Failed to generate review',
-            'strengths': ['Error generating review'],
-            'improvements': ['Please try again'],
-            'recommendations': 'Service temporarily unavailable',
+            'error': 'Failed to generate review',
+            'message': str(e),
             'is_premium': is_supporter
         }
