@@ -35,8 +35,8 @@
                             {{ rate_info.requests_used }}/{{ rate_info.requests_limit }} Reviews Used
                         </span>
                         {% if not supporter_status or not supporter_status.is_supporter %}
-                        <a href="https://www.buymeacoffee.com/pranaysuyash" class="btn btn-warning btn-sm"
-                            target="_blank" data-bs-toggle="tooltip" data-bs-placement="top"
+                        <a href="{{ buymeacoffee_url }}" class="btn btn-warning btn-sm" target="_blank"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Get detailed analysis and more reviews per day">
                             <i class="bi bi-star-fill me-1"></i>
                             Upgrade to Premium
@@ -57,7 +57,7 @@
                     <div class="alert alert-info">
                         <h5 class="alert-heading">Free Tier</h5>
                         <p class="mb-0">
-                            <a href="https://www.buymeacoffee.com/pranaysuyash" target="_blank" class="alert-link">
+                            <a href="{{ buymeacoffee_url }}" target="_blank" class="alert-link">
                                 Support us
                             </a>
                             to unlock:
@@ -73,14 +73,14 @@
                 </div>
 
                 <!-- Upload Form -->
-                <form id="uploadForm" class="mb-4">
+                <form id="uploadForm" class="mb-4" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="context" class="form-label">
                             Design Context
                             <i class="bi bi-question-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
                                 title="Provide context about your design's purpose and target users"></i>
                         </label>
-                        <textarea class="form-control" id="context" rows="3"
+                        <textarea class="form-control" id="context" name="context" rows="3"
                             placeholder="Describe your design's purpose, target users, and any specific areas you'd like feedback on..."
                             maxlength="500"></textarea>
                         <div class="form-text d-flex justify-content-between">
@@ -97,7 +97,8 @@
                             <i class="bi bi-question-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
                                 title="Upload your design image (JPG, JPEG, PNG, max 5MB)"></i>
                         </label>
-                        <input type="file" class="form-control" id="image" accept=".jpg,.jpeg,.png" required>
+                        <input type="file" class="form-control" id="image" name="image" accept=".jpg,.jpeg,.png"
+                            required>
                         <div class="form-text">
                             Supported formats: JPG, JPEG, PNG (max 5MB)
                         </div>
@@ -110,7 +111,7 @@
                 </form>
 
                 <!-- Loading Overlay -->
-                <div id="loading" class="loading-overlay">
+                <div id="loading" class="loading-overlay d-none">
                     <div class="loading-content text-center">
                         <div class="loading-spinner mb-3"></div>
                         <h5 class="mb-3">Analyzing Design...</h5>
@@ -144,4 +145,97 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
+    // Update character count for context textarea
+    const contextTextarea = document.getElementById('context');
+    const charCount = document.getElementById('contextCharCount');
+
+    contextTextarea.addEventListener('input', () => {
+        charCount.textContent = contextTextarea.value.length;
+    });
+
+    // Handle email setting via AJAX
+    document.getElementById('setEmailBtn').addEventListener('click', () => {
+        const emailInput = document.getElementById('email').value.trim();
+        fetch('/set-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'email': emailInput
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    location.reload(); // Reload to update supporter status
+                }
+            })
+            .catch(error => {
+                showError('An error occurred while setting your email.');
+                console.error('Error:', error);
+            });
+    });
+
+    // Handle form submission via AJAX
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        showLoading();
+
+        fetch('/analyze', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    displayReview(data.review);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showError('An error occurred while generating the review.');
+                console.error('Error:', error);
+            });
+    });
+
+    function showLoading() {
+        document.getElementById('loading').classList.remove('d-none');
+        document.getElementById('error').classList.add('d-none');
+        document.getElementById('result').classList.add('d-none');
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').classList.add('d-none');
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('d-none');
+        document.getElementById('result').classList.add('d-none');
+    }
+
+    function displayReview(review) {
+        const reviewContent = document.getElementById('reviewContent');
+        reviewContent.textContent = review.review_content;
+        document.getElementById('result').classList.remove('d-none');
+    }
+</script>
 {% endblock %}

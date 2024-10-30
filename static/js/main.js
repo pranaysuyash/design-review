@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Cache DOM elements
     const form = document.getElementById('uploadForm');
-    const loading = document.getElementById('loading');
+    const loading = document.getElementById('loading'); // Loading overlay
     const result = document.getElementById('result');
     const error = document.getElementById('error');
     const reviewContent = document.getElementById('reviewContent');
@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Show loading overlay
     function showLoading() {
         if (loading) {
+            loading.classList.remove('d-none');
             loading.classList.add('active');
             if (result) result.classList.add('d-none');
             if (error) error.classList.add('d-none');
@@ -69,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     progressBar.style.width = `${progress}%`;
                 }, 500);
             }
+            console.log('Loading overlay shown');
         }
     }
 
@@ -81,11 +83,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             setTimeout(() => {
+                loading.classList.add('d-none');
                 loading.classList.remove('active');
                 if (progressBar) {
                     progressBar.style.width = '0%';
                 }
             }, 500);
+            console.log('Loading overlay hidden');
         }
     }
 
@@ -101,6 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
             error.classList.remove('d-none');
             if (result) result.classList.add('d-none');
             error.scrollIntoView({ behavior: 'smooth' });
+            console.log('Error displayed:', message);
         }
     }
 
@@ -212,6 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
                 result.scrollIntoView({ behavior: 'smooth' });
+                console.log('Review result displayed');
             }
         } catch (err) {
             console.error('Error displaying review:', err);
@@ -220,8 +226,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function toggleSection(sectionIndex) {
-        const section = document.querySelectorAll('.section-collapsible')[sectionIndex];
-        const header = document.querySelectorAll('.section-header')[sectionIndex];
+        const sections = document.querySelectorAll('.section-collapsible');
+        const headers = document.querySelectorAll('.section-header');
+
+        if (sectionIndex >= sections.length || sectionIndex >= headers.length) {
+            console.warn('Invalid section index:', sectionIndex);
+            return;
+        }
+
+        const section = sections[sectionIndex];
+        const header = headers[sectionIndex];
         const isExpanded = section.getAttribute('data-expanded') === 'true';
 
         section.setAttribute('data-expanded', !isExpanded);
@@ -232,7 +246,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             section.style.maxHeight = `${section.scrollHeight}px`;
         }
+
+        console.log(`Section ${sectionIndex} toggled to ${!isExpanded ? 'expanded' : 'collapsed'}`);
     }
+
     // Enhanced fetch with retry
     async function fetchWithRetry(url, options, maxRetries = 3) {
         let lastError;
@@ -289,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="alert alert-info">
                         <h5 class="alert-heading">Free Tier</h5>
                         <p class="mb-0">
-                            <a href="https://www.buymeacoffee.com/pranaysuyash" target="_blank" class="alert-link">
+                            <a href="{{ buymeacoffee_url }}" target="_blank" class="alert-link">
                                 Become a supporter
                             </a> 
                             to unlock premium features and detailed analysis
@@ -297,6 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>`;
             }
             supporterStatus.classList.remove('d-none');
+            console.log('Supporter status updated');
         }
     }
 
@@ -306,6 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
         rateInfoElements.forEach(element => {
             element.textContent = `${rateInfo.requests_used}/${rateInfo.requests_limit} Reviews Used`;
         });
+        console.log('Rate info updated:', rateInfo);
     }
 
     // Handle email submission
@@ -340,6 +359,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (error) error.classList.add('d-none');
+
+                console.log('Email set successfully');
 
             } catch (err) {
                 showError(err.message || 'Failed to set email.');
@@ -414,6 +435,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateRateInfo(data.rate_info);
                 }
 
+                console.log('Review displayed successfully');
+
             } catch (err) {
                 console.error('Error processing request:', err);
                 showError(err.message || 'An unexpected error occurred.');
@@ -432,10 +455,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 contextCharCount.textContent = count;
             }
             if (count > 500) {
-                // Optionally, provide visual feedback without truncating abruptly
+                // Provide visual feedback without truncating abruptly
                 contextCharCount.classList.add('text-danger');
                 // Truncate to 500 characters to prevent excessive input
                 this.value = this.value.substring(0, 500);
+                contextCharCount.textContent = 500;
             } else {
                 contextCharCount.classList.remove('text-danger');
             }
@@ -464,6 +488,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (loading && loading.classList.contains('active')) {
             hideLoading();
         }
+
+        console.log('Cleanup completed on page unload');
     }
 
     // Add cleanup on page unload

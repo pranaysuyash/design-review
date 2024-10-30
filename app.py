@@ -20,7 +20,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default-secret-key')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+
+# Secure session cookies
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
 
 # Initialize Buy Me a Coffee API
 bmac_api = BuyMeACoffeeAPI()
@@ -40,29 +47,46 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Initialize Limiter correctly
-limiter = Limiter(app=app, key_func=get_remote_address)
+# Initialize Limiter with no default limits
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=[]
+)
+
+def is_supporter():
+    """Helper function to determine if current session user is a supporter"""
+    email = session.get('email', '')
+    supporter_status = bmac_api.get_supporter_status(email)
+    return supporter_status.get('is_supporter', False)
+
+def get_rate_limit():
+    """Determine rate limit based on supporter status"""
+    return "15 per day" if is_supporter() else "5 per day"
 
 @app.route('/')
 def index():
     email = session.get('email', '')
-    is_supporter = False
+    is_supporter_flag = False
     rate_info = {
         'requests_used': 0,
         'requests_limit': 5
     }
 
+    buymeacoffee_url = bmac_api.get_support_url()
+
     if email:
         supporter_status = bmac_api.get_supporter_status(email)
-        is_supporter = supporter_status.get('is_supporter', False)
-        rate_info['requests_limit'] = 15 if is_supporter else 5
+        is_supporter_flag = supporter_status.get('is_supporter', False)
+        rate_info['requests_limit'] = 15 if is_supporter_flag else 5
     else:
         supporter_status = None
 
     return render_template(
         'index.html',
         rate_info=rate_info,
-        supporter_status=supporter_status
+        supporter_status=supporter_status,
+        buymeacoffee_url=buymeacoffee_url  # Added this line
     )
 
 @app.route('/set-email', methods=['POST'])
@@ -83,11 +107,11 @@ def set_email():
 
         # Check supporter status
         supporter_status = bmac_api.get_supporter_status(email)
-        is_supporter = supporter_status.get('is_supporter', False)
+        is_supporter_flag = supporter_status.get('is_supporter', False)
 
         rate_info = {
             'requests_used': 0,  # Implement actual tracking if needed
-            'requests_limit': 15 if is_supporter else 5
+            'requests_limit': 15 if is_supporter_flag else 5
         }
 
         return jsonify({
@@ -101,6 +125,7 @@ def set_email():
         return jsonify({'error': 'An error occurred', 'message': str(e)}), 500
 
 @app.route('/analyze', methods=['POST'])
+@limiter.limit(get_rate_limit)
 def analyze_design():
     try:
         logger.debug("Starting design analysis")
@@ -141,11 +166,11 @@ def analyze_design():
 
         # Get user status and generate review
         email = session.get('email', '')
-        is_supporter = False
+        is_supporter_flag = False
 
         if email:
             supporter_status = bmac_api.get_supporter_status(email)
-            is_supporter = supporter_status.get('is_supporter', False)
+            is_supporter_flag = supporter_status.get('is_supporter', False)
         else:
             supporter_status = None
 
@@ -154,14 +179,14 @@ def analyze_design():
             review_response = generate_design_review(
                 base64_image,
                 context or 'No context provided',
-                is_supporter=is_supporter
+                is_supporter=is_supporter_flag
             )
 
             logger.debug("Successfully generated review")
 
             rate_info = {
                 'requests_used': 0,  # Implement actual tracking if needed
-                'requests_limit': 15 if is_supporter else 5
+                'requests_limit': 15 if is_supporter_flag else 5
             }
 
             return jsonify({
@@ -187,5 +212,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=5001,
-        debug=True
+        debug=False  # Disable debug mode for production
     )

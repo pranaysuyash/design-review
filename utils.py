@@ -1,26 +1,46 @@
 # utils.py
+
 import base64
 import os
 import logging
-import re  # Add this import
+import re
 from openai import OpenAI, OpenAIError
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
 
+# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def validate_api_key():
+    """Validate and retrieve the OpenAI API key from environment variables."""
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY environment variable is required")
     return api_key
 
+# Initialize OpenAI client with the validated API key
 openai_client = OpenAI(api_key=validate_api_key())
 
 def encode_image(image_data):
-    return base64.b64encode(image_data).decode('utf-8')
+    """
+    Encode image data to a base64 string.
+
+    Args:
+        image_data (bytes): Raw image data.
+
+    Returns:
+        str: Base64-encoded string of the image.
+    """
+    try:
+        encoded = base64.b64encode(image_data).decode('utf-8')
+        logger.debug("Image successfully encoded to base64.")
+        return encoded
+    except Exception as e:
+        logger.error(f"Error encoding image: {e}")
+        raise
 
 PROMPTS = {
     'free': """
@@ -296,7 +316,15 @@ Provide specific, actionable insights backed by UX principles and industry stand
 }
 
 def clean_review_content(content):
-    """Clean up any markdown or unwanted formatting in the review content"""
+    """
+    Clean up any markdown or unwanted formatting in the review content.
+
+    Args:
+        content (str): The raw review content from OpenAI.
+
+    Returns:
+        str: The cleaned and formatted review content.
+    """
     try:
         # Convert dashes to bullet points if they're being used as list items
         cleaned = re.sub(r'^\s*-\s+', '• ', content, flags=re.MULTILINE)
@@ -309,7 +337,7 @@ def clean_review_content(content):
         # Fix section headers
         cleaned = re.sub(r'^[-\s]*#\s*', '# ', cleaned, flags=re.MULTILINE)
         
-        # Remove any other potential markdown elements
+        # Remove any other potential markdown elements like links
         cleaned = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', cleaned)
         cleaned = cleaned.replace('`', '')
         
@@ -328,7 +356,17 @@ def clean_review_content(content):
         return content  # Return original content if cleaning fails
 
 def generate_design_review(base64_image, context, is_supporter=False):
-    """Generate a design review based on user tier"""
+    """
+    Generate a design review based on user tier.
+
+    Args:
+        base64_image (str): Base64-encoded image data.
+        context (str): Additional context provided by the user.
+        is_supporter (bool): Indicates if the user is a supporter.
+
+    Returns:
+        dict: Contains the review content and status.
+    """
     try:
         logger.debug(f"Generating {'premium' if is_supporter else 'free'} review")
         
@@ -353,7 +391,7 @@ Structure your response exactly according to the sections in the prompt.
         )
         
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
                 {
                     "role": "system",
@@ -361,18 +399,7 @@ Structure your response exactly according to the sections in the prompt.
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
+                    "content": prompt
                 }
             ],
             max_tokens=4000,
@@ -394,6 +421,14 @@ Structure your response exactly according to the sections in the prompt.
             'status': 'success'
         }
         
+    except OpenAIError as e:
+        logger.error(f"OpenAI API error: {e}")
+        return {
+            'error': 'Failed to generate review',
+            'message': 'An error occurred while communicating with the AI service.',
+            'is_premium': is_supporter,
+            'status': 'error'
+        }
     except Exception as e:
         logger.error(f"Error generating review: {e}")
         return {

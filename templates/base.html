@@ -18,6 +18,33 @@
 
     <!-- Highlight.js CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3QB56SBEDR"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-3QB56SBEDR');
+    </script>
+
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "oqmi2tu7sm");
+    </script>
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+
 </head>
 
 <body>
@@ -42,13 +69,23 @@
     <!-- Footer -->
     <footer class="footer py-3 bg-dark">
         <div class="container text-center">
-            <a href="https://www.buymeacoffee.com/pranaysuyash" class="btn btn-outline-warning" target="_blank"
-                rel="noopener noreferrer">
+            <a href="{{ buymeacoffee_url }}" class="btn btn-outline-warning" target="_blank" rel="noopener noreferrer">
                 <i class="bi bi-cup-hot me-2"></i>
                 Buy me a coffee
             </a>
         </div>
     </footer>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay d-none" id="loading" role="alert" aria-live="assertive" aria-busy="true">
+        <div class="loading-content">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <div class="loading-text">Analyzing...</div>
+            <div class="progress-wrapper">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
 

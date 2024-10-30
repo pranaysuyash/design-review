@@ -1,3 +1,5 @@
+/* style.css */
+
 /* Root Variables */
 :root {
     --section-padding: 1.5rem;
@@ -67,7 +69,8 @@ body {
 
 /* Review Content Styles */
 .review-wrapper {
-    background-color: var(--bg-dark);
+    background-color: var(--dark-surface);
+    /* Corrected variable name */
     border-radius: 0.75rem;
     padding: 1.5rem;
     color: var(--text-primary);
@@ -199,7 +202,9 @@ body {
     font-size: 1.2rem;
 }
 
-/* Loading Overlay */
+/* Loading Overlay Styles */
+
+/* Overlay Background */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -207,31 +212,50 @@ body {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.8);
+    /* Semi-transparent dark background */
     backdrop-filter: blur(5px);
+    /* Adds a blur effect */
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    /* Ensures the overlay appears above all other elements */
     opacity: 0;
     visibility: hidden;
-    transition: opacity var(--transition-duration) ease,
-        visibility var(--transition-duration) ease;
+    transition: opacity var(--transition-duration) ease, visibility var(--transition-duration) ease;
 }
 
+/* Active State: Visible Overlay */
 .loading-overlay.active {
     opacity: 1;
     visibility: visible;
 }
 
+/* Loading Content Container */
+.loading-content {
+    text-align: center;
+    color: var(--text-primary);
+}
+
+/* Spinning Loader */
 .loading-spinner {
-    width: 3rem;
-    height: 3rem;
-    border: 3px solid var(--text-primary);
+    width: 4rem;
+    height: 4rem;
+    border: 4px solid var(--text-secondary);
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
 }
 
+/* Loading Text */
+.loading-text {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+/* Progress Bar */
 .progress-wrapper {
     width: 200px;
     height: 4px;
@@ -337,12 +361,6 @@ body {
     }
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
 @keyframes shimmer {
     0% {
         background-position: 100% 0;
@@ -353,7 +371,7 @@ body {
     }
 }
 
-/* Responsive Design */
+/* Responsive Enhancements */
 @media (max-width: 768px) {
     :root {
         --section-padding: 1rem;
@@ -371,9 +389,32 @@ body {
     .section-title {
         font-size: 1.1rem;
     }
+
+    .premium-badge {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .sub-heading-title h3 {
+        font-size: 1rem;
+    }
+
+    /* Adjust Loading Spinner Size for Smaller Screens */
+    .loading-spinner {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .loading-text {
+        font-size: 1rem;
+    }
+
+    .progress-wrapper {
+        width: 150px;
+    }
 }
 
-/* Accessibility */
+/* Accessibility Enhancements */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
@@ -408,10 +449,10 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: var(--border-radius);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     transition: transform var(--transition-duration) ease;
 }
 
@@ -486,39 +527,7 @@ body {
     border: none;
 }
 
-/* Sub-heading Styles */
-.sub-heading {
-    margin: 1.5rem 0 1rem;
-}
-
-.sub-heading-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    margin-bottom: 0.75rem;
-    transition: transform var(--transition-duration) ease;
-}
-
-.sub-heading-title:hover {
-    transform: translateX(5px);
-}
-
-.sub-heading-title i {
-    color: var(--text-secondary);
-    font-size: 1.25rem;
-}
-
-.sub-heading-title h3 {
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-/* Bullet Points */
+/* Bullet Points Enhancements */
 .bullet-point {
     margin: 0.75rem 0 0.75rem 1.5rem;
     position: relative;
@@ -536,7 +545,14 @@ body {
     border-radius: 50%;
 }
 
+/* Content Text Enhancements */
 .content-text {
     margin: 0.75rem 0;
     line-height: 1.6;
+}
+
+/* Tooltip Enhancements (Optional) */
+.tooltip-inner {
+    max-width: 200px;
+    text-align: left;
 }
