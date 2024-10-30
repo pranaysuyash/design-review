@@ -1,4 +1,4 @@
-/* style.css */
+/* Root Variables */
 :root {
     --section-padding: 1.5rem;
     --border-radius: 0.5rem;
@@ -6,19 +6,25 @@
     --glass-bg: rgba(255, 255, 255, 0.1);
     --glass-border: rgba(255, 255, 255, 0.2);
     --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-    --dark-bg: #1a1a1a;
+    --dark-bg: #1e2130;
     --dark-surface: #2d2d2d;
     --dark-border: #3d3d3d;
     --premium-gradient: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
     --primary-color: #0d6efd;
     --secondary-color: #17a2b8;
-    --text-color: #ffffff;
-    --muted-text-color: #cccccc;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --blue-400: #60a5fa;
+    --green-400: #4ade80;
+    --yellow-400: #facc15;
+    --purple-400: #c084fc;
+    --border-dark: rgba(255, 255, 255, 0.1);
 }
 
+/* Base Styles */
 body {
     background-color: var(--dark-bg);
-    color: var(--text-color);
+    color: var(--text-primary);
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -49,26 +55,115 @@ body {
 .form-control {
     background-color: var(--dark-surface);
     border-color: var(--dark-border);
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 .form-control:focus {
     background-color: var(--dark-surface);
     border-color: var(--primary-color);
-    color: var(--text-color);
+    color: var(--text-primary);
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
 /* Review Content Styles */
+.review-wrapper {
+    background-color: var(--bg-dark);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    color: var(--text-primary);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-dark);
+    margin-bottom: 2rem;
+    animation: fadeIn 0.5s ease-in;
+}
+
 .review-content {
     background: var(--dark-surface);
     border-radius: var(--border-radius);
     padding: 2rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
-    animation: fadeIn 0.5s ease-in;
 }
 
+/* Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--dark-border);
+    animation: slideIn 0.5s ease forwards;
+}
+
+.section-header i {
+    font-size: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+/* Content Sections */
+.section-content {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.section-content p {
+    margin-bottom: 0.75rem;
+}
+
+/* Bullet Points */
+.bullet-point {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-left: 0.5rem;
+}
+
+.bullet {
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Color Classes */
+.text-blue-400 {
+    color: var(--blue-400);
+}
+
+.text-green-400 {
+    color: var(--green-400);
+}
+
+.text-yellow-400 {
+    color: var(--yellow-400);
+}
+
+.text-purple-400 {
+    color: var(--purple-400);
+}
+
+.text-primary {
+    color: var(--primary-color);
+}
+
+.text-success {
+    color: #28a745;
+}
+
+.text-warning {
+    color: #ffc107;
+}
+
+.text-purple {
+    color: #6f42c1;
+}
+
+/* Premium Features */
 .premium-review {
     background: linear-gradient(145deg,
             var(--dark-surface) 0%,
@@ -77,78 +172,6 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-/* Section Headers */
-.section-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 2rem 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--dark-border);
-    opacity: 0;
-    transform: translateY(20px);
-}
-
-.section-header.animate-in {
-    animation: slideIn 0.5s ease forwards;
-}
-
-.section-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-}
-
-.section-icon i {
-    font-size: 1.5rem;
-}
-
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-/* List Styles */
-.review-list {
-    list-style: none;
-    padding-left: 1rem;
-    margin: 1rem 0;
-}
-
-.review-list-item {
-    position: relative;
-    padding: 0.5rem 0 0.5rem 2rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-}
-
-.review-list-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 1rem;
-    width: 8px;
-    height: 8px;
-    background-color: var(--primary-color);
-    border-radius: 50%;
-}
-
-.review-list-item.strength::before {
-    background-color: #28a745;
-}
-
-.review-list-item.improvement::before {
-    background-color: #ffc107;
-}
-
-.review-list-item.suggestion::before {
-    background-color: #6f42c1;
-}
-
-/* Premium Features */
 .premium-features {
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -174,23 +197,6 @@ body {
 
 .badge-icon {
     font-size: 1.2rem;
-}
-
-/* Text colors for icons */
-.text-primary {
-    color: #0d6efd;
-}
-
-.text-success {
-    color: #28a745;
-}
-
-.text-warning {
-    color: #ffc107;
-}
-
-.text-purple {
-    color: #6f42c1;
 }
 
 /* Loading Overlay */
@@ -220,7 +226,7 @@ body {
 .loading-spinner {
     width: 3rem;
     height: 3rem;
-    border: 3px solid var(--text-color);
+    border: 3px solid var(--text-primary);
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -248,9 +254,62 @@ body {
     border-radius: var(--border-radius);
     background-color: rgba(220, 53, 69, 0.1);
     border: 1px solid rgba(220, 53, 69, 0.2);
-    color: var(--text-color);
+    color: var(--text-primary);
     margin: 1rem 0;
     animation: slideIn 0.3s ease;
+}
+
+/* Code and Blockquote Styles */
+.review-content pre {
+    background-color: #1f1f1f;
+    padding: 1em;
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    box-shadow: var(--glass-shadow);
+}
+
+.review-content code {
+    background-color: #2d2d2d;
+    padding: 0.2em 0.4em;
+    font-family: 'Fira Code', monospace;
+    border-radius: 0.25rem;
+    color: #e83e8c;
+}
+
+.review-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding: 0.5rem 1rem;
+    color: var(--text-secondary);
+    margin: 1rem 0;
+    font-style: italic;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 0.25rem;
+    box-shadow: var(--glass-shadow);
+}
+
+/* Table Styles */
+.review-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background-color: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.review-content th,
+.review-content td {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--dark-border);
+    text-align: left;
+}
+
+.review-content th {
+    background-color: rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 /* Animations */
@@ -294,80 +353,23 @@ body {
     }
 }
 
-/* Code blocks */
-.review-content pre {
-    background-color: #1f1f1f;
-    padding: 1em;
-    overflow-x: auto;
-    border-radius: var(--border-radius);
-    margin: 1rem 0;
-}
-
-.review-content code {
-    background-color: #1f1f1f;
-    padding: 0.2em 0.4em;
-    font-family: monospace;
-    border-radius: 0.25rem;
-    color: #e83e8c;
-}
-
-/* Blockquote */
-.review-content blockquote {
-    border-left: 4px solid var(--primary-color);
-    padding-left: 1em;
-    color: var(--muted-text-color);
-    margin: 1rem 0;
-    font-style: italic;
-}
-
-/* Table styles */
-.review-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-    background-color: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-}
-
-.review-content th,
-.review-content td {
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--dark-border);
-    text-align: left;
-}
-
-.review-content th {
-    background-color: rgba(0, 0, 0, 0.2);
-    font-weight: 600;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
     :root {
         --section-padding: 1rem;
     }
 
-    .review-content {
+    .review-content,
+    .review-wrapper {
         padding: 1rem;
     }
 
+    .section-header i {
+        font-size: 1.25rem;
+    }
+
     .section-title {
-        font-size: 1.25rem;
-    }
-
-    .section-icon {
-        width: 1.5rem;
-        height: 1.5rem;
-    }
-
-    .section-icon i {
-        font-size: 1.25rem;
-    }
-
-    .review-list-item {
-        padding-left: 1.5rem;
+        font-size: 1.1rem;
     }
 }
 

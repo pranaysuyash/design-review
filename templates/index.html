@@ -4,7 +4,7 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card mb-4">
+        <div class="card mb-4 glass-effect">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">
                     <i class="bi bi-bezier me-2"></i>Design Review
@@ -127,7 +127,9 @@
                 <!-- Result Section -->
                 <div id="result" class="mt-4 d-none">
                     <h3 class="mb-3">Design Review</h3>
-                    <div id="reviewContent" class="review-content"></div>
+                    <div id="reviewContent" class="review-content">
+                        <!-- Rendered review content will appear here -->
+                    </div>
 
                     <!-- Rate Info -->
                     <div id="rateInfo" class="mt-3 text-muted small text-end">
@@ -142,13 +144,4 @@
     </div>
 </div>
 
-<!-- Initialize tooltips -->
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    });
-</script>
 {% endblock %}

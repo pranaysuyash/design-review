@@ -105,70 +105,109 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Show review result
-    async function showResult(reviewData) {
+    function showResult(reviewData) {
         try {
-            console.log('Processing review data:', reviewData);
-
             if (result && reviewContent) {
                 result.classList.remove('d-none');
 
-                // DOMPurify configuration
+                // Ensure we have valid review content
+                if (!reviewData?.review_content) {
+                    throw new Error('No review content available');
+                }
+
+                // Configure DOMPurify
                 const purifyConfig = {
-                    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'hr', 'br', 'i', 'span'],
-                    ALLOWED_ATTR: ['href', 'title', 'class', 'id', 'style', 'align', 'aria-hidden']
+                    ALLOWED_TAGS: ['div', 'h1', 'h2', 'h3', 'p', 'i', 'span', 'strong'],
+                    ALLOWED_ATTR: ['class']
                 };
 
-                // Ensure review_content is a string
-                const markdownContent = typeof reviewData.review_content === 'string' ? reviewData.review_content : '';
-                if (!markdownContent) {
-                    throw new Error('Review content is empty or invalid.');
-                }
+                // Process the review content
+                const sections = reviewData.review_content.split(/(?=# )/g).filter(Boolean);
+                let htmlContent = '<div class="review-wrapper">';
 
-                // Render markdown to HTML and sanitize it
-                const rawHtml = marked.parse(markdownContent);
-                const htmlContent = DOMPurify.sanitize(rawHtml, purifyConfig);
+                sections.forEach(section => {
+                    const lines = section.split('\n').filter(Boolean);
+                    const titleLine = lines[0];
+                    const sectionTitle = titleLine.replace('# ', '').trim();
+                    const content = lines.slice(1);
 
-                reviewContent.innerHTML = htmlContent;
+                    // Determine icon and class based on section type
+                    let iconClass = 'bi-info-circle';
+                    let textColorClass = 'text-blue-400';
 
-                // Post-processing to add icons
-                const headers = reviewContent.querySelectorAll('.section-header');
-                headers.forEach(header => {
-                    const text = header.textContent.trim();
-                    let iconClass = '';
-
-                    if (text.includes('Overview')) {
-                        iconClass = 'bi-info-circle';
-                    } else if (text.includes('Strengths')) {
+                    if (sectionTitle.toLowerCase().includes('strength')) {
                         iconClass = 'bi-check-circle';
-                    } else if (text.includes('Areas for Improvement')) {
+                        textColorClass = 'text-green-400';
+                    } else if (sectionTitle.toLowerCase().includes('improvement') ||
+                        sectionTitle.toLowerCase().includes('enhancement')) {
                         iconClass = 'bi-exclamation-triangle';
-                    } else if (text.includes('Suggestions') || text.includes('Specific Suggestions')) {
+                        textColorClass = 'text-yellow-400';
+                    } else if (sectionTitle.toLowerCase().includes('suggestion') ||
+                        sectionTitle.toLowerCase().includes('recommend')) {
                         iconClass = 'bi-lightbulb';
-                    } else if (text.includes('Benefits')) {
-                        iconClass = 'bi-star';
+                        textColorClass = 'text-purple-400';
                     }
 
-                    if (iconClass) {
-                        const iconElement = document.createElement('i');
-                        iconElement.classList.add('bi', iconClass);
-                        iconElement.setAttribute('aria-hidden', 'true');
-                        iconElement.style.marginRight = '0.5rem';
-                        header.prepend(iconElement);
-                    }
+                    htmlContent += `
+                        <div class="review-section mb-6">
+                            <div class="section-header">
+                                <i class="bi ${iconClass} ${textColorClass} text-xl"></i>
+                                <h2 class="section-title ${textColorClass} text-xl font-semibold">${sectionTitle}</h2>
+                            </div>
+                            <div class="section-content text-gray-200">`;
+
+                    let currentIndentLevel = 0;
+                    let inBulletList = false;
+
+                    content.forEach(line => {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine) {
+                            htmlContent += '<div class="my-2"></div>';
+                            return;
+                        }
+
+                        // Calculate indentation level
+                        const indentMatch = line.match(/^\s*/);
+                        const indentLevel = indentMatch ? Math.floor(indentMatch[0].length / 2) : 0;
+
+                        if (trimmedLine.startsWith('• ')) {
+                            // Handle bullet points
+                            const bulletContent = trimmedLine.substring(2);
+                            htmlContent += `
+                                <div class="bullet-point ml-${indentLevel * 4} flex items-start gap-2 my-2">
+                                    <span class="bullet-icon text-gray-400 mt-1">•</span>
+                                    <p class="flex-1">${bulletContent}</p>
+                                </div>`;
+                        } else {
+                            // Regular paragraph
+                            htmlContent += `<p class="my-2 ml-${indentLevel * 4}">${trimmedLine}</p>`;
+                        }
+                    });
+
+                    htmlContent += `
+                            </div>
+                        </div>`;
                 });
 
-                // Syntax highlighting
-                if (typeof hljs !== 'undefined') {
-                    reviewContent.querySelectorAll('pre code').forEach((block) => {
-                        hljs.highlightElement(block);
-                    });
+                htmlContent += '</div>';
+
+                // Sanitize and set the content
+                reviewContent.innerHTML = DOMPurify.sanitize(htmlContent, purifyConfig);
+
+                // Add premium indicator if applicable
+                if (reviewData.is_premium) {
+                    const premiumBadge = document.createElement('div');
+                    premiumBadge.className = 'premium-badge text-sm py-1 px-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-full inline-flex items-center gap-2 mb-4';
+                    premiumBadge.innerHTML = '<i class="bi bi-star-fill"></i> Premium Analysis';
+                    reviewContent.insertBefore(premiumBadge, reviewContent.firstChild);
                 }
 
+                // Scroll to result
                 result.scrollIntoView({ behavior: 'smooth' });
             }
         } catch (err) {
             console.error('Error displaying review:', err);
-            showError(err.message || 'Failed to display the review. Please try again.');
+            showError('Failed to display the review. Please try again.');
         }
     }
 
