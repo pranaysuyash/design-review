@@ -248,6 +248,7 @@ body {
     margin-bottom: 1rem;
 }
 
+
 /* Loading Text */
 .loading-text {
     font-size: 1.2rem;
@@ -370,6 +371,13 @@ body {
         background-position: -100% 0;
     }
 }
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 
 /* Responsive Enhancements */
 @media (max-width: 768px) {

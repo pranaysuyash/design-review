@@ -1,13 +1,15 @@
 # app.py
 import os
 import logging
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, g, after_this_request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
 from utils import encode_image, generate_design_review
 from buymeacoffee import BuyMeACoffeeAPI
 from dotenv import load_dotenv
+import base64
+
 
 # Load environment variables
 load_dotenv()
@@ -40,6 +42,37 @@ CORS(app, resources={
         "allow_headers": ["Content-Type"]
     }
 })
+
+# app.py
+
+@app.context_processor
+def inject_nonce():
+    return dict(csp_nonce=getattr(g, 'csp_nonce', ''))
+
+@app.after_request
+def set_security_headers(response):
+    # Generate a 16-byte nonce for secure inline script usage
+    nonce = base64.b64encode(os.urandom(16)).decode('utf-8')
+    g.csp_nonce = nonce  # Store in Flask's global context for use in templates
+
+    # Updated CSP headers, now including Google Tag Manager (GTM)
+    response.headers['Content-Security-Policy'] = (
+        f"default-src 'self'; "
+        f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.clarity.ms https://www.google-analytics.com https://www.googletagmanager.com; "
+        f"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        f"img-src 'self' data: https://www.google-analytics.com; "
+        f"connect-src 'self' https://www.google-analytics.com; "
+        f"font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+        f"frame-src 'self';"
+    )
+
+    # Additional recommended security headers
+    response.headers['X-Frame-Options'] = 'DENY'  # Prevent clickjacking
+    response.headers['X-Content-Type-Options'] = 'nosniff'  # Prevent MIME type sniffing
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'  # Control referrer information
+    response.headers['X-XSS-Protection'] = '1; mode=block'  # XSS protection
+
+    return response
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
