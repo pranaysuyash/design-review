@@ -110,22 +110,19 @@ document.addEventListener('DOMContentLoaded', function () {
             if (result && reviewContent) {
                 result.classList.remove('d-none');
 
-                // Ensure we have valid review content
                 if (!reviewData?.review_content) {
                     throw new Error('No review content available');
                 }
 
-                // Configure DOMPurify
                 const purifyConfig = {
-                    ALLOWED_TAGS: ['div', 'h1', 'h2', 'h3', 'p', 'i', 'span', 'strong'],
-                    ALLOWED_ATTR: ['class']
+                    ALLOWED_TAGS: ['div', 'h2', 'h3', 'p', 'i', 'span', 'button'],
+                    ALLOWED_ATTR: ['class', 'data-expanded', 'data-section-index']  // Added data-section-index
                 };
 
-                // Process the review content
                 const sections = reviewData.review_content.split(/(?=# )/g).filter(Boolean);
                 let htmlContent = '<div class="review-wrapper">';
 
-                sections.forEach(section => {
+                sections.forEach((section, sectionIndex) => {
                     const lines = section.split('\n').filter(Boolean);
                     const titleLine = lines[0];
                     const sectionTitle = titleLine.replace('# ', '').trim();
@@ -138,49 +135,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (sectionTitle.toLowerCase().includes('strength')) {
                         iconClass = 'bi-check-circle';
                         textColorClass = 'text-green-400';
-                    } else if (sectionTitle.toLowerCase().includes('improvement') ||
-                        sectionTitle.toLowerCase().includes('enhancement')) {
+                    } else if (sectionTitle.toLowerCase().includes('improvement')) {
                         iconClass = 'bi-exclamation-triangle';
                         textColorClass = 'text-yellow-400';
-                    } else if (sectionTitle.toLowerCase().includes('suggestion') ||
-                        sectionTitle.toLowerCase().includes('recommend')) {
+                    } else if (sectionTitle.toLowerCase().includes('suggestion')) {
                         iconClass = 'bi-lightbulb';
                         textColorClass = 'text-purple-400';
                     }
 
                     htmlContent += `
-                        <div class="review-section mb-6">
-                            <div class="section-header">
-                                <i class="bi ${iconClass} ${textColorClass} text-xl"></i>
-                                <h2 class="section-title ${textColorClass} text-xl font-semibold">${sectionTitle}</h2>
+                        <div class="review-section">
+                            <div class="accordion-header">
+                                <button class="section-header" data-section-index="${sectionIndex}">
+                                    <div class="section-header-content">
+                                        <i class="bi ${iconClass} ${textColorClass}"></i>
+                                        <h2 class="section-title ${textColorClass}">${sectionTitle}</h2>
+                                    </div>
+                                    <i class="bi bi-chevron-down section-chevron"></i>
+                                </button>
                             </div>
-                            <div class="section-content text-gray-200">`;
+                            <div class="section-collapsible" data-expanded="true">`;
 
-                    let currentIndentLevel = 0;
-                    let inBulletList = false;
-
+                    let currentSubheading = '';
                     content.forEach(line => {
                         const trimmedLine = line.trim();
-                        if (!trimmedLine) {
-                            htmlContent += '<div class="my-2"></div>';
-                            return;
-                        }
+                        if (!trimmedLine) return;
 
-                        // Calculate indentation level
-                        const indentMatch = line.match(/^\s*/);
-                        const indentLevel = indentMatch ? Math.floor(indentMatch[0].length / 2) : 0;
-
-                        if (trimmedLine.startsWith('• ')) {
-                            // Handle bullet points
-                            const bulletContent = trimmedLine.substring(2);
+                        if (trimmedLine.startsWith('- ') && !trimmedLine.match(/\s{2,}-/)) {
+                            currentSubheading = trimmedLine.substring(2);
                             htmlContent += `
-                                <div class="bullet-point ml-${indentLevel * 4} flex items-start gap-2 my-2">
-                                    <span class="bullet-icon text-gray-400 mt-1">•</span>
-                                    <p class="flex-1">${bulletContent}</p>
+                                <div class="sub-heading">
+                                    <div class="sub-heading-title">
+                                        <i class="bi bi-arrow-right-short"></i>
+                                        <h3>${currentSubheading}</h3>
+                                    </div>
+                                </div>`;
+                        } else if (trimmedLine.startsWith('  -') || trimmedLine.startsWith('• ')) {
+                            const bulletContent = trimmedLine.replace(/^(\s*[-•]\s*)/, '').trim();
+                            htmlContent += `
+                                <div class="bullet-point">
+                                    <p>${bulletContent}</p>
                                 </div>`;
                         } else {
-                            // Regular paragraph
-                            htmlContent += `<p class="my-2 ml-${indentLevel * 4}">${trimmedLine}</p>`;
+                            htmlContent += `<p class="content-text">${trimmedLine}</p>`;
                         }
                     });
 
@@ -191,18 +188,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 htmlContent += '</div>';
 
-                // Sanitize and set the content
                 reviewContent.innerHTML = DOMPurify.sanitize(htmlContent, purifyConfig);
 
-                // Add premium indicator if applicable
+                // Add premium badge if applicable
                 if (reviewData.is_premium) {
                     const premiumBadge = document.createElement('div');
-                    premiumBadge.className = 'premium-badge text-sm py-1 px-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-full inline-flex items-center gap-2 mb-4';
+                    premiumBadge.className = 'premium-badge';
                     premiumBadge.innerHTML = '<i class="bi bi-star-fill"></i> Premium Analysis';
                     reviewContent.insertBefore(premiumBadge, reviewContent.firstChild);
                 }
 
-                // Scroll to result
+                // Initialize all sections as expanded and attach event listeners
+                const sectionHeaders = document.querySelectorAll('.section-header');
+                sectionHeaders.forEach(header => {
+                    header.addEventListener('click', function () {
+                        const sectionIndex = parseInt(this.getAttribute('data-section-index'));
+                        toggleSection(sectionIndex);
+                    });
+                });
+
+                document.querySelectorAll('.section-collapsible').forEach(section => {
+                    section.style.maxHeight = `${section.scrollHeight}px`;
+                });
+
                 result.scrollIntoView({ behavior: 'smooth' });
             }
         } catch (err) {
@@ -211,6 +219,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function toggleSection(sectionIndex) {
+        const section = document.querySelectorAll('.section-collapsible')[sectionIndex];
+        const header = document.querySelectorAll('.section-header')[sectionIndex];
+        const isExpanded = section.getAttribute('data-expanded') === 'true';
+
+        section.setAttribute('data-expanded', !isExpanded);
+        header.classList.toggle('collapsed');
+
+        if (isExpanded) {
+            section.style.maxHeight = '0px';
+        } else {
+            section.style.maxHeight = `${section.scrollHeight}px`;
+        }
+    }
     // Enhanced fetch with retry
     async function fetchWithRetry(url, options, maxRetries = 3) {
         let lastError;
